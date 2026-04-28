@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GrowWise — Family Progress Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ===== CSS VARIABLES ===== */
+:root {
+  --bg: #f4f2ee;
+  --surface: #ffffff;
+  --surface2: #faf9f7;
+  --border: #e8e4de;
+  --text: #1a1814;
+  --text2: #6b6560;
+  --text3: #a09a93;
+  --accent: #2d6a4f;
+  --accent-light: #d8f3dc;
+  --gold: #e9a84c;
+  --gold-light: #fef3cd;
+  --rose: #c0392b;
+  --rose-light: #fde8e6;
+  --blue: #2471a3;
+  --blue-light: #d6eaf8;
+  --purple: #7d3c98;
+  --purple-light: #ead9f5;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+  --font: 'Sora', sans-serif;
+  --font-serif: 'DM Serif Display', serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --nav-h: 64px;
+  --bottom-h: 68px;
+  --child1-color: #2d6a4f;
+  --child1-light: #d8f3dc;
+  --child2-color: #7d3c98;
+  --child2-light: #ead9f5;
+  --child3-color: #2471a3;
+  --child3-light: #d6eaf8;
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+button { cursor: pointer; font-family: var(--font); border: none; background: none; }
+input, select, textarea { font-family: var(--font); }
+a { text-decoration: none; color: inherit; }
+
+/* ===== TOP NAV ===== */
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--nav-h);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-logo {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--accent); display: grid; place-items: center;
+  font-size: 18px;
+}
+.nav-title { font-family: var(--font-serif); font-size: 20px; letter-spacing: -0.3px; }
+.nav-title span { color: var(--accent); }
+.nav-actions { display: flex; align-items: center; gap: 10px; }
+.nav-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: grid; place-items: center; font-size: 16px;
+  transition: all 0.2s;
+}
+.nav-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+.notif-badge { position: relative; }
+.notif-badge::after {
+  content: '2'; position: absolute; top: -3px; right: -3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--rose); color: #fff; font-size: 9px;
+  display: grid; place-items: center; font-weight: 600;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.app-wrapper {
+  padding-top: var(--nav-h);
+  padding-bottom: calc(var(--bottom-h) + 16px);
+  min-height: 100vh;
+}
+
+/* ===== CHILD SWITCHER ===== */
+.child-switcher {
+  padding: 16px 16px 0;
+  display: flex; gap: 10px; overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky; top: var(--nav-h); z-index: 50;
+  background: var(--bg); padding-bottom: 12px;
+}
+.child-switcher::-webkit-scrollbar { display: none; }
+.child-chip {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 13px; font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.child-chip.active {
+  border-color: var(--child-color, var(--accent));
+  background: var(--child-light, var(--accent-light));
+  color: var(--child-color, var(--accent));
+}
+.child-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 600; color: #fff;
+  background: var(--child-color, var(--accent));
+}
+.child-chip-add {
+  flex-shrink: 0;
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1.5px dashed var(--border);
+  background: transparent;
+  display: grid; place-items: center; font-size: 20px;
+  color: var(--text3); cursor: pointer;
+  transition: all 0.2s;
+}
+.child-chip-add:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* ===== SECTION TABS ===== */
+.section-tabs {
+  display: flex; gap: 6px; padding: 0 16px 16px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.section-tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex-shrink: 0; padding: 7px 14px;
+  border-radius: 50px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text2);
+  transition: all 0.2s; cursor: pointer;
+  letter-spacing: 0.2px; text-transform: uppercase;
+}
+.tab-btn.active {
+  background: var(--text); color: #fff; border-color: var(--text);
+}
+
+/* ===== SECTIONS ===== */
+.section { display: none; padding: 0 16px; }
+.section.active { display: block; }
+
+/* ===== OVERVIEW ===== */
+.greeting-bar {
+  margin-bottom: 20px;
+}
+.greeting-bar h2 {
+  font-family: var(--font-serif); font-size: 24px; line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+.greeting-bar h2 span { color: var(--child-color, var(--accent)); }
+.greeting-sub { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+.summary-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 12px; margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow-sm);
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--card-accent, var(--accent));
+}
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text3); font-weight: 600; margin-bottom: 6px; }
+.stat-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.trend { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; margin-top: 6px; padding: 2px 7px; border-radius: 50px; }
+.trend.up { background: var(--accent-light); color: var(--accent); }
+.trend.down { background: var(--rose-light); color: var(--rose); }
+.trend.stable { background: var(--gold-light); color: var(--gold); }
+
+/* ===== SMART INSIGHTS ===== */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.section-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+.see-all { font-size: 12px; color: var(--accent); font-weight: 600; }
+
+.insights-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.insight-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  display: flex; align-items: flex-start; gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.insight-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: grid; place-items: center; font-size: 16px;
+}
+.insight-icon.green { background: var(--accent-light); }
+.insight-icon.yellow { background: var(--gold-light); }
+.insight-icon.red { background: var(--rose-light); }
+.insight-icon.blue { background: var(--blue-light); }
+.insight-text { flex: 1; }
+.insight-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.insight-desc { font-size: 12px; color: var(--text2); }
+
+/* ===== PROGRESS BARS ===== */
+.prog-bar-wrap { margin-bottom: 16px; }
+.prog-bar-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.prog-bar-track {
+  height: 8px; background: var(--border); border-radius: 50px; overflow: hidden;
+}
+.prog-bar-fill {
+  height: 100%; border-radius: 50px;
+  background: var(--fill-color, var(--accent));
+  transition: width 1s cubic-bezier(.22,.68,0,1.2);
+}
+
+/* ===== CHART CARDS ===== */
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+  box-shadow: var(--shadow-sm); margin-bottom: 16px;
+}
+.chart-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+.chart-subtitle { font-size: 12px; color: var(--text2); margin-bottom: 14px; }
+
+/* ===== TIMELINE ===== */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before {
+  content: ''; position: absolute; left: 10px; top: 0; bottom: 0;
+  width: 2px; background: var(--border); border-radius: 2px;
+}
+.tl-item { position: relative; margin-bottom: 20px; }
+.tl-dot {
+  position: absolute; left: -28px; top: 4px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--dot-color, var(--accent));
+  border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--dot-color, var(--accent));
+  display: grid; place-items: center; font-size: 8px; color: #fff;
+}
+.tl-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.tl-meta { font-size: 11px; color: var(--text3); margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
+.tl-tag {
+  padding: 2px 7px; border-radius: 50px; font-size: 10px; font-weight: 600;
+  background: var(--tag-bg, var(--accent-light)); color: var(--tag-color, var(--accent));
+}
+.tl-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.tl-desc { font-size: 12px; color: var(--text2); }
+
+/* ===== ACADEMICS SECTION ===== */
+.subject-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.subject-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: all 0.2s;
+}
+.subject-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.subject-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
+}
+.subject-info { flex: 1; }
+.subject-name { font-size: 14px; font-weight: 600; }
+.subject-detail { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.subject-score {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.5px;
+}
+.score-chip {
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 50px;
+}
+.score-chip.high { background: var(--accent-light); color: var(--accent); }
+.score-chip.mid { background: var(--gold-light); color: var(--gold); }
+.score-chip.low { background: var(--rose-light); color: var(--rose); }
+
+/* ===== CO-CURRICULAR ===== */
+.activities-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+.activity-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+  box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: all 0.2s; text-align: center;
+}
+.activity-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.activity-icon { font-size: 28px; margin-bottom: 8px; }
+.activity-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.activity-freq { font-size: 11px; color: var(--text2); }
+.activity-badge {
+  display: inline-block; margin-top: 8px;
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 50px;
+}
+
+/* ===== GOALS ===== */
+.goals-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.goal-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.goal-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+.goal-title { font-size: 14px; font-weight: 600; }
+.goal-status {
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 50px; flex-shrink: 0;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.goal-status.on-track { background: var(--accent-light); color: var(--accent); }
+.goal-status.at-risk { background: var(--gold-light); color: var(--gold); }
+.goal-status.done { background: var(--blue-light); color: var(--blue); }
+.goal-meta { font-size: 12px; color: var(--text2); margin-bottom: 10px; }
+.goal-progress-wrap { position: relative; }
+.goal-pct { font-size: 11px; font-weight: 700; color: var(--text2); position: absolute; right: 0; top: -18px; }
+
+/* ===== REPORTS ===== */
+.report-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.report-btn {
+  flex: 1; min-width: 140px;
+  padding: 12px 18px; border-radius: var(--radius-sm);
+  background: var(--surface); border: 1.5px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.2s;
+}
+.report-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.report-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.report-btn.primary:hover { opacity: 0.9; }
+
+/* ===== MODAL / DRAWER ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+  display: none; align-items: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.open { display: flex; }
+.modal-drawer {
+  background: var(--surface); width: 100%; max-height: 92vh;
+  border-radius: 24px 24px 0 0; overflow-y: auto;
+  padding: 20px 20px 40px; animation: slideUp 0.3s cubic-bezier(.22,.68,0,1.2);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-handle {
+  width: 40px; height: 4px; border-radius: 4px;
+  background: var(--border); margin: 0 auto 20px;
+}
+.modal-title { font-family: var(--font-serif); font-size: 22px; margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+
+/* ===== FORM ELEMENTS ===== */
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); margin-bottom: 6px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface2); font-size: 14px; color: var(--text);
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: var(--accent);
+  background: var(--surface);
+}
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-submit {
+  width: 100%; padding: 14px; border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff; font-size: 15px; font-weight: 700;
+  border: none; cursor: pointer; margin-top: 8px;
+  transition: all 0.2s;
+}
+.form-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+.form-section-label {
+  font-size: 13px; font-weight: 700; color: var(--text); margin: 18px 0 10px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+
+/* ===== SCORE DISPLAY ===== */
+.score-ring-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+.score-ring { position: relative; width: 120px; height: 120px; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring-num {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700; letter-spacing: -1px;
+}
+.score-ring-label { font-size: 10px; color: var(--text2); font-weight: 500; }
+
+/* ===== FAB ===== */
+.fab {
+  position: fixed; right: 20px; bottom: calc(var(--bottom-h) + 20px); z-index: 90;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  box-shadow: 0 6px 24px rgba(45,106,79,0.4);
+  font-size: 24px; display: grid; place-items: center;
+  transition: all 0.2s; cursor: pointer;
+  border: none;
+}
+.fab:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(45,106,79,0.5); }
+.fab:active { transform: scale(0.96); }
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: var(--bottom-h);
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 8px;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.bottom-nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.2s; color: var(--text3);
+}
+.bottom-nav-item.active { color: var(--accent); }
+.bottom-nav-item .bnav-icon { font-size: 20px; }
+.bottom-nav-item .bnav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
+
+/* ===== MISC UTILITIES ===== */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); margin-bottom: 12px; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+.empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 50px; }
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tag { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 50px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); cursor: pointer; }
+.tag.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+.search-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 9px 14px; margin-bottom: 14px;
+}
+.search-bar input { flex: 1; border: none; background: none; font-size: 14px; color: var(--text); }
+.search-bar input:focus { outline: none; }
+.search-bar input::placeholder { color: var(--text3); }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.weekly-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+.day-dot {
+  aspect-ratio: 1; border-radius: 50%; background: var(--border);
+  display: grid; place-items: center; font-size: 9px; font-weight: 600;
+  color: var(--text3);
+}
+.day-dot.done { background: var(--accent); color: #fff; }
+.day-dot.partial { background: var(--gold-light); color: var(--gold); }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; bottom: calc(var(--bottom-h) + 80px); left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: #fff; padding: 10px 20px; border-radius: 50px;
+  font-size: 13px; font-weight: 600; z-index: 300; opacity: 0;
+  transition: all 0.3s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== PRINT ===== */
+@media print {
+  .top-nav, .bottom-nav, .fab, .child-switcher, .section-tabs, .report-actions { display: none !important; }
+  .app-wrapper { padding: 0; }
+  .section { display: block !important; }
+}
+
+/* ===== DESKTOP ===== */
+@media (min-width: 768px) {
+  .summary-grid { grid-template-columns: repeat(4, 1fr); }
+  .activities-grid { grid-template-columns: repeat(3, 1fr); }
+  .form-row-3 { grid-template-columns: repeat(3, 1fr); }
+  .child-switcher { padding: 20px 24px 12px; }
+  .section { padding: 0 24px; }
+  .section-tabs { padding: 0 24px 16px; }
+  body { font-size: 15px; }
+  .app-wrapper { max-width: 800px; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div class="nav-brand">
+    <div class="nav-logo">🌱</div>
+    <span class="nav-title">Grow<span>Wise</span></span>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-btn notif-badge" title="Notifications">🔔</button>
+    <button class="nav-btn" title="Settings" onclick="showSection('settings')">⚙️</button>
+  </div>
+</nav>
+
+<div class="app-wrapper">
+
+  <!-- CHILD SWITCHER -->
+  <div class="child-switcher" id="childSwitcher">
+    <!-- Populated by JS -->
+    <button class="child-chip-add" onclick="openAddChildModal()" title="Add Child">+</button>
+  </div>
+
+  <!-- SECTION TABS -->
+  <div class="section-tabs" id="sectionTabs">
+    <button class="tab-btn active" onclick="showSection('overview',this)">Overview</button>
+    <button class="tab-btn" onclick="showSection('academics',this)">Academics</button>
+    <button class="tab-btn" onclick="showSection('cocurricular',this)">Activities</button>
+    <button class="tab-btn" onclick="showSection('goals',this)">Goals</button>
+    <button class="tab-btn" onclick="showSection('timeline',this)">Timeline</button>
+    <button class="tab-btn" onclick="showSection('reports',this)">Reports</button>
+  </div>
+
+  <!-- ===== OVERVIEW SECTION ===== -->
+  <section class="section active" id="sec-overview">
+    <div class="greeting-bar">
+      <h2>Hi, <span id="childNameHeading">Aarav</span> 👋</h2>
+      <p class="greeting-sub" id="greetingSub">Academic Year 2024–25 · Class 8</p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="summary-grid" id="overviewStats"></div>
+
+    <!-- Smart Insights -->
+    <div class="section-header">
+      <span class="section-title">Smart Insights</span>
+      <span class="see-all">This Month</span>
+    </div>
+    <div class="insights-list" id="insightsList"></div>
+
+    <!-- Subject Progress -->
+    <div class="section-header">
+      <span class="section-title">Subject Overview</span>
+      <span class="see-all" onclick="showSection('academics',document.querySelectorAll('.tab-btn')[1])">See all</span>
+    </div>
+    <div class="card" id="subjectProgressBars"></div>
+
+    <!-- Weekly Habits -->
+    <div class="section-header"><span class="section-title">This Week's Habits</span></div>
+    <div class="card" id="weeklyHabits"></div>
+
+    <!-- Mini Chart -->
+    <div class="chart-card">
+      <div class="chart-title">Academic Trend (Last 6 Months)</div>
+      <canvas id="overviewChart" height="140"></canvas>
+    </div>
+
+  </section>
+
+  <!-- ===== ACADEMICS SECTION ===== -->
+  <section class="section" id="sec-academics">
+    <div class="score-ring-wrap">
+      <div class="score-ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#e8e4de" stroke-width="10"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#2d6a4f" stroke-width="10"
+            stroke-dasharray="314" id="ringFill" stroke-dashoffset="80" stroke-linecap="round"/>
+        </svg>
+        <div class="score-ring-num"><span id="ringPct">74</span><span class="score-ring-label">AVERAGE</span></div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Subjects</span>
+      <button class="see-all" onclick="openAddRecord('academic')">+ Add</button>
+    </div>
+    <div class="subject-grid" id="subjectGrid"></div>
+
+    <div class="chart-card">
+      <div class="chart-title">Score History by Subject</div>
+      <canvas id="subjectChart" height="180"></canvas>
+    </div>
+
+    <div class="section-header"><span class="section-title">Recent Assessments</span></div>
+    <div id="recentAssessments"></div>
+  </section>
+
+  <!-- ===== CO-CURRICULAR SECTION ===== -->
+  <section class="section" id="sec-cocurricular">
+    <div class="section-header">
+      <span class="section-title">Activities</span>
+      <button class="see-all" onclick="openAddRecord('cocurricular')">+ Add</button>
+    </div>
+    <div class="activities-grid" id="activitiesGrid"></div>
+
+    <div class="section-header"><span class="section-title">Achievements</span></div>
+    <div id="achievementsList"></div>
+
+    <div class="chart-card">
+      <div class="chart-title">Activity Participation (Hours/Week)</div>
+      <canvas id="activityChart" height="160"></canvas>
+    </div>
+  </section>
+
+  <!-- ===== GOALS SECTION ===== -->
+  <section class="section" id="sec-goals">
+    <div class="section-header">
+      <span class="section-title">Active Goals</span>
+      <button class="see-all" onclick="openAddGoal()">+ Goal</button>
+    </div>
+    <div class="goals-list" id="goalsList"></div>
+  </section>
+
+  <!-- ===== TIMELINE SECTION ===== -->
+  <section class="section" id="sec-timeline">
+    <div class="section-header">
+      <span class="section-title">Activity Log</span>
+    </div>
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" placeholder="Search records…" id="timelineSearch" oninput="filterTimeline(this.value)">
+    </div>
+    <div class="tag-row" style="margin-bottom:16px" id="timelineTags">
+      <span class="tag active" onclick="filterTag(this,'all')">All</span>
+      <span class="tag" onclick="filterTag(this,'exam')">Exam</span>
+      <span class="tag" onclick="filterTag(this,'award')">Award</span>
+      <span class="tag" onclick="filterTag(this,'homework')">Homework</span>
+      <span class="tag" onclick="filterTag(this,'competition')">Competition</span>
+      <span class="tag" onclick="filterTag(this,'practice')">Practice</span>
+      <span class="tag" onclick="filterTag(this,'parent note')">Parent Note</span>
+    </div>
+    <div class="timeline" id="timelineContainer"></div>
+  </section>
+
+  <!-- ===== REPORTS SECTION ===== -->
+  <section class="section" id="sec-reports">
+    <div class="section-header"><span class="section-title">Reports & Export</span></div>
+    <div class="report-actions">
+      <button class="report-btn primary" onclick="printReport()">🖨 Print Report</button>
+      <button class="report-btn" onclick="exportJSON()">📦 Export JSON</button>
+      <button class="report-btn" onclick="exportCSV()">📊 Export CSV</button>
+    </div>
+
+    <div class="card" id="reportPreview">
+      <div class="section-title" style="margin-bottom:12px" id="reportChildName">Aarav's Progress Report</div>
+      <div id="reportBody"></div>
+    </div>
+  </section>
+
+  <!-- ===== SETTINGS SECTION ===== -->
+  <section class="section" id="sec-settings">
+    <div class="section-header"><span class="section-title">Settings</span></div>
+    <div class="card">
+      <div class="form-section-label">Manage Children</div>
+      <div id="childrenList"></div>
+      <button class="form-submit" style="margin-top:12px" onclick="openAddChildModal()">+ Add New Child</button>
+    </div>
+    <div class="card">
+      <div class="form-section-label">Data Management</div>
+      <button class="report-btn" style="width:100%;margin-bottom:10px" onclick="exportJSON()">📦 Backup Data (JSON)</button>
+      <button class="report-btn" style="width:100%;margin-bottom:10px" onclick="importData()">📥 Import Data</button>
+      <button class="report-btn" style="width:100%;color:var(--rose);border-color:var(--rose)" onclick="clearAllData()">🗑 Clear All Data</button>
+    </div>
+    <div class="card" style="text-align:center;color:var(--text3)">
+      <p style="font-size:12px">GrowWise v1.0 · Data stored locally in your browser</p>
+      <p style="font-size:11px;margin-top:4px">Built for families who care about progress 🌱</p>
+    </div>
+  </section>
+
+</div><!-- end app-wrapper -->
+
+<!-- FAB -->
+<button class="fab" onclick="openAddRecord('auto')" title="Add Record">＋</button>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-item active" onclick="showSection('overview',null,this)">
+    <div class="bnav-icon">🏠</div><div class="bnav-label">Home</div>
+  </div>
+  <div class="bottom-nav-item" onclick="showSection('academics',null,this)">
+    <div class="bnav-icon">📚</div><div class="bnav-label">Academics</div>
+  </div>
+  <div class="bottom-nav-item" onclick="showSection('cocurricular',null,this)">
+    <div class="bnav-icon">🏆</div><div class="bnav-label">Activities</div>
+  </div>
+  <div class="bottom-nav-item" onclick="showSection('goals',null,this)">
+    <div class="bnav-icon">🎯</div><div class="bnav-label">Goals</div>
+  </div>
+  <div class="bottom-nav-item" onclick="showSection('timeline',null,this)">
+    <div class="bnav-icon">📋</div><div class="bnav-label">Log</div>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ===== ADD RECORD MODAL ===== -->
+<div class="modal-overlay" id="addRecordModal">
+  <div class="modal-drawer">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">Add Record</div>
+    <div class="modal-sub" id="modalSub">Log academic or activity data</div>
+
+    <form onsubmit="submitRecord(event)">
+      <!-- Type Selector -->
+      <div class="form-group">
+        <label class="form-label">Record Type</label>
+        <select class="form-select" id="recordType" onchange="updateFormFields()">
+          <option value="academic">📚 Academic / Test Score</option>
+          <option value="homework">📝 Homework / Assignment</option>
+          <option value="attendance">✅ Attendance</option>
+          <option value="competition">🏆 Competition / Award</option>
+          <option value="activity">🎨 Activity / Practice</option>
+          <option value="reading">📖 Reading Log</option>
+          <option value="note">🗒 Parent Note</option>
+        </select>
+      </div>
+
+      <!-- Dynamic fields container -->
+      <div id="dynamicFields"></div>
+
+      <!-- Common fields -->
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="recDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes / Comments</label>
+        <textarea class="form-textarea" id="recNotes" placeholder="Teacher feedback, observations, context…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags</label>
+        <input type="text" class="form-input" id="recTags" placeholder="e.g. excellent, needs-attention, competition">
+      </div>
+
+      <button type="submit" class="form-submit">Save Record ✓</button>
+    </form>
+
+    <button style="width:100%;padding:12px;margin-top:10px;color:var(--text2);font-size:14px" onclick="closeModal('addRecordModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ===== ADD GOAL MODAL ===== -->
+<div class="modal-overlay" id="addGoalModal">
+  <div class="modal-drawer">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Goal</div>
+    <div class="modal-sub">Set an academic or co-curricular target</div>
+    <form onsubmit="submitGoal(event)">
+      <div class="form-group">
+        <label class="form-label">Goal Type</label>
+        <select class="form-select" id="goalType">
+          <option value="academic">📚 Academic</option>
+          <option value="activity">🎨 Co-Curricular</option>
+          <option value="habit">🔄 Habit</option>
+          <option value="reading">📖 Reading</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Goal Title</label>
+        <input type="text" class="form-input" id="goalTitle" placeholder="e.g. Score 85+ in Maths, Practice piano 3x/week" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Target</label>
+          <input type="text" class="form-input" id="goalTarget" placeholder="e.g. 85%">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deadline</label>
+          <input type="date" class="form-input" id="goalDeadline">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Current Progress (%)</label>
+        <input type="number" class="form-input" id="goalProgress" min="0" max="100" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="goalNotes" placeholder="Strategy, steps, or context…"></textarea>
+      </div>
+      <button type="submit" class="form-submit">Add Goal ✓</button>
+    </form>
+    <button style="width:100%;padding:12px;margin-top:10px;color:var(--text2);font-size:14px" onclick="closeModal('addGoalModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ===== ADD CHILD MODAL ===== -->
+<div class="modal-overlay" id="addChildModal">
+  <div class="modal-drawer">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Child</div>
+    <div class="modal-sub">Create a new child profile</div>
+    <form onsubmit="submitChild(event)">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-input" id="childName" placeholder="Child's name" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Class / Grade</label>
+          <input type="text" class="form-input" id="childClass" placeholder="e.g. Class 7">
+        </div>
+        <div class="form-group">
+          <label class="form-label">School</label>
+          <input type="text" class="form-input" id="childSchool" placeholder="School name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color Theme</label>
+        <select class="form-select" id="childColor">
+          <option value="green">🌿 Forest Green</option>
+          <option value="purple">💜 Violet</option>
+          <option value="blue">💙 Ocean Blue</option>
+          <option value="rose">🌹 Rose</option>
+          <option value="gold">✨ Gold</option>
+        </select>
+      </div>
+      <button type="submit" class="form-submit">Create Profile ✓</button>
+    </form>
+    <button style="width:100%;padding:12px;margin-top:10px;color:var(--text2);font-size:14px" onclick="closeModal('addChildModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ===== HIDDEN FILE INPUT FOR IMPORT ===== -->
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+/* ===================================================
+   GROWWISE — Family Progress Tracker
+   Data stored in localStorage
+=================================================== */
+
+// ===== CONSTANTS =====
+const COLOR_MAP = {
+  green:  { main: '#2d6a4f', light: '#d8f3dc' },
+  purple: { main: '#7d3c98', light: '#ead9f5' },
+  blue:   { main: '#2471a3', light: '#d6eaf8' },
+  rose:   { main: '#c0392b', light: '#fde8e6' },
+  gold:   { main: '#e9a84c', light: '#fef3cd' },
+};
+
+const SUBJECT_ICONS = {
+  'Mathematics': '🔢', 'Science': '🔬', 'English': '📖', 'Hindi': '🇮🇳',
+  'Social Studies': '🌍', 'Computer': '💻', 'Physics': '⚡', 'Chemistry': '🧪',
+  'Biology': '🌿', 'History': '📜', 'Geography': '🗺', 'Economics': '📈',
+  'Art': '🎨', 'Music': '🎵', 'PE': '⚽', 'Sanskrit': '🕉',
+};
+
+const ACTIVITY_ICONS = {
+  'Cricket': '🏏', 'Football': '⚽', 'Swimming': '🏊', 'Badminton': '🏸',
+  'Tennis': '🎾', 'Chess': '♟', 'Piano': '🎹', 'Guitar': '🎸',
+  'Violin': '🎻', 'Dance': '💃', 'Drawing': '🎨', 'Painting': '🖌',
+  'Debate': '🗣', 'Public Speaking': '🎤', 'Coding': '💻', 'Robotics': '🤖',
+  'Math Olympiad': '🔢', 'Science Olympiad': '🔬', 'Reading Club': '📚',
+  'Scouts': '⛺', 'Volunteering': '🤝', 'Leadership': '👑',
+};
+
+// ===== STATE =====
+let state = {
+  children: [],
+  records: [],
+  goals: [],
+  activeChild: 0,
+  activeSection: 'overview',
+};
+
+let charts = {};
+
+// ===== LOCAL STORAGE =====
+function saveState() {
+  localStorage.setItem('growwise_v2', JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('growwise_v2');
+  if (saved) {
+    try { state = JSON.parse(saved); }
+    catch(e) { initDefaultData(); }
+  } else {
+    initDefaultData();
+  }
+}
+
+function initDefaultData() {
+  state = {
+    children: [
+      { id: 'c1', name: 'Aarav', class: 'Class 8', school: 'Delhi Public School', color: 'green', emoji: '👦' },
+      { id: 'c2', name: 'Priya', class: 'Class 5', school: 'Delhi Public School', color: 'purple', emoji: '👧' },
+    ],
+    activeChild: 0,
+    activeSection: 'overview',
+    records: [
+      { id: 'r1', childId: 'c1', type: 'academic', subject: 'Mathematics', score: 88, maxScore: 100, exam: 'Unit Test 3', date: '2024-11-15', tags: ['exam'], notes: 'Excellent performance in algebra' },
+      { id: 'r2', childId: 'c1', type: 'academic', subject: 'Science', score: 72, maxScore: 100, exam: 'Mid-term', date: '2024-10-20', tags: ['exam','needs-attention'], notes: 'Needs revision in chemistry' },
+      { id: 'r3', childId: 'c1', type: 'academic', subject: 'English', score: 91, maxScore: 100, exam: 'Unit Test 3', date: '2024-11-15', tags: ['exam','excellent'], notes: 'Outstanding essay writing' },
+      { id: 'r4', childId: 'c1', type: 'academic', subject: 'Hindi', score: 79, maxScore: 100, exam: 'Unit Test 3', date: '2024-11-14', tags: ['exam'], notes: '' },
+      { id: 'r5', childId: 'c1', type: 'academic', subject: 'Social Studies', score: 85, maxScore: 100, exam: 'Unit Test 3', date: '2024-11-16', tags: ['exam'], notes: '' },
+      { id: 'r6', childId: 'c1', type: 'academic', subject: 'Computer', score: 95, maxScore: 100, exam: 'Unit Test 3', date: '2024-11-13', tags: ['exam','excellent'], notes: 'Top scorer in class' },
+      { id: 'r7', childId: 'c1', type: 'competition', activity: 'Math Olympiad', outcome: 'Gold Medal', date: '2024-11-10', tags: ['competition','award'], notes: 'District level, 1st place' },
+      { id: 'r8', childId: 'c1', type: 'activity', activity: 'Cricket', duration: 90, frequency: 'Weekly', date: '2024-11-18', tags: ['practice'], notes: 'Working on batting technique' },
+      { id: 'r9', childId: 'c1', type: 'activity', activity: 'Debate', duration: 60, frequency: 'Weekly', date: '2024-11-17', tags: ['practice'], notes: 'Topic: Climate change — performed well' },
+      { id: 'r10', childId: 'c1', type: 'homework', subject: 'Science', completed: true, date: '2024-11-19', tags: ['homework'], notes: 'Completed on time' },
+      { id: 'r11', childId: 'c1', type: 'note', date: '2024-11-19', tags: ['parent note'], notes: 'Had a great parent-teacher meeting. Teacher praised his attitude.' },
+      { id: 'r12', childId: 'c1', type: 'academic', subject: 'Mathematics', score: 82, maxScore: 100, exam: 'Unit Test 2', date: '2024-09-20', tags: ['exam'], notes: '' },
+      { id: 'r13', childId: 'c1', type: 'academic', subject: 'Mathematics', score: 76, maxScore: 100, exam: 'Unit Test 1', date: '2024-07-15', tags: ['exam'], notes: '' },
+      { id: 'r14', childId: 'c1', type: 'reading', book: 'The Alchemist', pages: 40, date: '2024-11-18', tags: ['reading'], notes: 'On chapter 5' },
+      { id: 'r15', childId: 'c2', type: 'academic', subject: 'Mathematics', score: 94, maxScore: 100, exam: 'Unit Test 3', date: '2024-11-15', tags: ['exam','excellent'], notes: 'Perfect problem solving skills' },
+      { id: 'r16', childId: 'c2', type: 'academic', subject: 'English', score: 88, maxScore: 100, exam: 'Unit Test 3', date: '2024-11-15', tags: ['exam'], notes: '' },
+      { id: 'r17', childId: 'c2', type: 'activity', activity: 'Dance', duration: 60, frequency: 'Twice weekly', date: '2024-11-16', tags: ['practice'], notes: 'Learning Bharatanatyam' },
+      { id: 'r18', childId: 'c2', type: 'competition', activity: 'Drawing Competition', outcome: 'Silver Medal', date: '2024-11-05', tags: ['competition','award'], notes: 'School level' },
+    ],
+    goals: [
+      { id: 'g1', childId: 'c1', type: 'academic', title: 'Score 90+ in Science', target: '90%', deadline: '2025-02-28', progress: 72, status: 'at-risk', notes: 'Focus on chemistry chapters' },
+      { id: 'g2', childId: 'c1', type: 'activity', title: 'Win inter-school Debate', target: '1st Place', deadline: '2025-01-15', progress: 60, status: 'on-track', notes: 'Practice 2x per week' },
+      { id: 'g3', childId: 'c1', type: 'habit', title: 'Complete homework on time daily', target: '95% streak', deadline: '2025-03-31', progress: 80, status: 'on-track', notes: 'Currently at 4/5 days' },
+      { id: 'g4', childId: 'c1', type: 'reading', title: 'Read 12 books this year', target: '12 books', deadline: '2025-03-31', progress: 58, status: 'on-track', notes: '7 books done' },
+      { id: 'g5', childId: 'c2', type: 'academic', title: 'Maintain 90+ average', target: '90%', deadline: '2025-03-31', progress: 91, status: 'done', notes: 'Already achieving!' },
+    ]
+  };
+  saveState();
+}
+
+// ===== NAVIGATION =====
+let tabBtns = [];
+
+function showSection(name, tabEl, navEl) {
+  // Hide all sections
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + name)?.classList.add('active');
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (tabEl) tabEl.classList.add('active');
+  else {
+    // Match by section name
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      if (b.textContent.toLowerCase().includes(name.toLowerCase())) b.classList.add('active');
+    });
+  }
+
+  // Update bottom nav
+  document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+
+  state.activeSection = name;
+
+  // Re-render relevant section
+  if (name === 'overview') renderOverview();
+  else if (name === 'academics') renderAcademics();
+  else if (name === 'cocurricular') renderCoCurricular();
+  else if (name === 'goals') renderGoals();
+  else if (name === 'timeline') renderTimeline();
+  else if (name === 'reports') renderReport();
+  else if (name === 'settings') renderSettings();
+}
+
+// ===== CHILD MANAGEMENT =====
+function getActiveChild() {
+  return state.children[state.activeChild] || null;
+}
+
+function getChildRecords(childId) {
+  return state.records.filter(r => r.childId === childId);
+}
+
+function getChildColor(child) {
+  return COLOR_MAP[child?.color || 'green'];
+}
+
+function switchChild(idx) {
+  state.activeChild = idx;
+  saveState();
+  renderChildSwitcher();
+  renderCurrentSection();
+}
+
+function renderChildSwitcher() {
+  const container = document.getElementById('childSwitcher');
+  container.innerHTML = '';
+  state.children.forEach((child, i) => {
+    const col = getChildColor(child);
+    const active = i === state.activeChild;
+    const chip = document.createElement('button');
+    chip.className = 'child-chip' + (active ? ' active' : '');
+    chip.style.setProperty('--child-color', col.main);
+    chip.style.setProperty('--child-light', col.light);
+    chip.innerHTML = `<div class="child-avatar" style="background:${col.main}">${child.name[0]}</div>${child.name}`;
+    chip.onclick = () => switchChild(i);
+    container.appendChild(chip);
+  });
+  const addBtn = document.createElement('button');
+  addBtn.className = 'child-chip-add';
+  addBtn.textContent = '+';
+  addBtn.title = 'Add Child';
+  addBtn.onclick = openAddChildModal;
+  container.appendChild(addBtn);
+}
+
+function renderCurrentSection() {
+  const s = state.activeSection;
+  if (s === 'overview') renderOverview();
+  else if (s === 'academics') renderAcademics();
+  else if (s === 'cocurricular') renderCoCurricular();
+  else if (s === 'goals') renderGoals();
+  else if (s === 'timeline') renderTimeline();
+  else if (s === 'reports') renderReport();
+  else if (s === 'settings') renderSettings();
+}
+
+// ===== ANALYTICS HELPERS =====
+function getSubjectScores(childId) {
+  const records = getChildRecords(childId).filter(r => r.type === 'academic' && r.score !== undefined);
+  const bySubject = {};
+  records.forEach(r => {
+    if (!bySubject[r.subject]) bySubject[r.subject] = [];
+    bySubject[r.subject].push((r.score / r.maxScore) * 100);
+  });
+  const result = {};
+  Object.keys(bySubject).forEach(s => {
+    const arr = bySubject[s];
+    result[s] = Math.round(arr.reduce((a, b) => a + b, 0) / arr.length);
+  });
+  return result;
+}
+
+function getOverallAverage(childId) {
+  const scores = Object.values(getSubjectScores(childId));
+  if (!scores.length) return 0;
+  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+}
+
+function getActivities(childId) {
+  const records = getChildRecords(childId).filter(r => r.type === 'activity' || r.type === 'competition');
+  const byActivity = {};
+  records.forEach(r => {
+    const key = r.activity || 'Other';
+    if (!byActivity[key]) byActivity[key] = { count: 0, duration: 0, awards: [] };
+    byActivity[key].count++;
+    byActivity[key].duration += (r.duration || 0);
+    if (r.type === 'competition' && r.outcome) byActivity[key].awards.push(r.outcome);
+  });
+  return byActivity;
+}
+
+function getHomeworkRate(childId) {
+  const hw = getChildRecords(childId).filter(r => r.type === 'homework');
+  if (!hw.length) return null;
+  const done = hw.filter(r => r.completed).length;
+  return Math.round((done / hw.length) * 100);
+}
+
+function generateInsights(childId) {
+  const insights = [];
+  const subjectScores = getSubjectScores(childId);
+  const avg = getOverallAverage(childId);
+  const activities = getActivities(childId);
+  const hwRate = getHomeworkRate(childId);
+
+  // Find strongest subject
+  const entries = Object.entries(subjectScores);
+  if (entries.length) {
+    const best = entries.reduce((a, b) => a[1] > b[1] ? a : b);
+    const worst = entries.reduce((a, b) => a[1] < b[1] ? a : b);
+    if (best[1] >= 85) insights.push({ icon: '⭐', type: 'green', title: `Strong in ${best[0]}`, desc: `Scoring ${best[1]}% — keep it up!` });
+    if (worst[1] < 75) insights.push({ icon: '⚠️', type: 'yellow', title: `Needs focus in ${worst[0]}`, desc: `Current average is ${worst[1]}%. Schedule revision sessions.` });
+  }
+
+  // Overall
+  if (avg >= 85) insights.push({ icon: '🎉', type: 'green', title: 'Excellent overall performance', desc: `${avg}% academic average — in the top tier!` });
+  else if (avg >= 70) insights.push({ icon: '📈', type: 'blue', title: 'Steady academic progress', desc: `${avg}% overall average — room to grow further.` });
+  else if (avg > 0) insights.push({ icon: '📚', type: 'red', title: 'Academics need attention', desc: `${avg}% average — let's identify gaps.` });
+
+  // Activities
+  const actCount = Object.keys(activities).length;
+  if (actCount >= 3) insights.push({ icon: '🌟', type: 'green', title: 'Great co-curricular balance', desc: `Participating in ${actCount} activities — well-rounded development.` });
+  else if (actCount === 0) insights.push({ icon: '🎨', type: 'blue', title: 'Consider an activity', desc: 'No co-curriculars logged yet. Sports, arts, or clubs can help holistic growth.' });
+
+  // Awards
+  const awards = getChildRecords(childId).filter(r => r.type === 'competition' && r.outcome);
+  if (awards.length) insights.push({ icon: '🏆', type: 'green', title: `${awards.length} award${awards.length > 1 ? 's' : ''} this year`, desc: awards.slice(-1)[0].notes || 'Congratulations on the achievement!' });
+
+  // Homework
+  if (hwRate !== null) {
+    if (hwRate >= 90) insights.push({ icon: '✅', type: 'green', title: 'Excellent homework consistency', desc: `${hwRate}% completion rate — very disciplined!` });
+    else if (hwRate < 70) insights.push({ icon: '📝', type: 'yellow', title: 'Homework consistency is low', desc: `Only ${hwRate}% completion. Set a daily study routine.` });
+  }
+
+  return insights.slice(0, 4);
+}
+
+// ===== OVERVIEW RENDER =====
+function renderOverview() {
+  const child = getActiveChild();
+  if (!child) return;
+  const col = getChildColor(child);
+  const avg = getOverallAverage(child.id);
+  const activities = getActivities(child.id);
+  const hwRate = getHomeworkRate(child.id);
+  const awards = getChildRecords(child.id).filter(r => r.type === 'competition' && r.outcome);
+
+  document.getElementById('childNameHeading').textContent = child.name;
+  document.getElementById('childNameHeading').style.color = col.main;
+  document.getElementById('greetingSub').textContent = `${child.class} · ${child.school}`;
+
+  // Stats
+  const statsEl = document.getElementById('overviewStats');
+  statsEl.innerHTML = `
+    <div class="stat-card" style="--card-accent:${col.main}">
+      <div class="stat-label">Academic Avg</div>
+      <div class="stat-value">${avg}%</div>
+      <div class="trend ${avg >= 80 ? 'up' : avg >= 65 ? 'stable' : 'down'}">${avg >= 80 ? '↑' : avg >= 65 ? '→' : '↓'} ${avg >= 80 ? 'Strong' : avg >= 65 ? 'Stable' : 'Needs Work'}</div>
+    </div>
+    <div class="stat-card" style="--card-accent:${col.main}">
+      <div class="stat-label">Activities</div>
+      <div class="stat-value">${Object.keys(activities).length}</div>
+      <div class="stat-sub">Co-curriculars</div>
+    </div>
+    <div class="stat-card" style="--card-accent:${col.main}">
+      <div class="stat-label">Homework</div>
+      <div class="stat-value">${hwRate !== null ? hwRate + '%' : 'N/A'}</div>
+      <div class="trend ${hwRate === null ? 'stable' : hwRate >= 80 ? 'up' : 'down'}">${hwRate === null ? '—' : hwRate >= 80 ? '↑ On Track' : '↓ Low'}</div>
+    </div>
+    <div class="stat-card" style="--card-accent:${col.main}">
+      <div class="stat-label">Awards</div>
+      <div class="stat-value">${awards.length}</div>
+      <div class="stat-sub">This year</div>
+    </div>
+  `;
+
+  // Insights
+  const insights = generateInsights(child.id);
+  const insightsEl = document.getElementById('insightsList');
+  insightsEl.innerHTML = insights.length ? insights.map(ins => `
+    <div class="insight-card">
+      <div class="insight-icon ${ins.type}">${ins.icon}</div>
+      <div class="insight-text">
+        <div class="insight-title">${ins.title}</div>
+        <div class="insight-desc">${ins.desc}</div>
+      </div>
+    </div>
+  `).join('') : `<div class="empty-state"><div class="empty-icon">💡</div><p>Add records to see insights</p></div>`;
+
+  // Subject progress bars
+  const subjectScores = getSubjectScores(child.id);
+  const spEl = document.getElementById('subjectProgressBars');
+  const subjects = Object.entries(subjectScores);
+  spEl.innerHTML = subjects.length ? subjects.map(([sub, pct]) => `
+    <div class="prog-bar-wrap">
+      <div class="prog-bar-label"><span>${SUBJECT_ICONS[sub] || '📚'} ${sub}</span><span style="font-weight:700">${pct}%</span></div>
+      <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${pct}%;--fill-color:${pct >= 85 ? col.main : pct >= 70 ? '#e9a84c' : '#c0392b'}"></div></div>
+    </div>
+  `).join('') : '<div style="color:var(--text2);font-size:13px;text-align:center;padding:12px">No academic records yet</div>';
+
+  // Weekly habits
+  const today = new Date();
+  const weekDays = ['M','T','W','T','F','S','S'];
+  const weekEl = document.getElementById('weeklyHabits');
+  const recentHw = getChildRecords(child.id).filter(r => r.type === 'homework').slice(-7);
+  weekEl.innerHTML = `
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 Homework Completion</div>
+    <div class="weekly-grid">${weekDays.map((d,i) => {
+      const status = i < recentHw.length ? (recentHw[i].completed ? 'done' : 'partial') : '';
+      return `<div class="day-dot ${status}" title="${d}">${d}</div>`;
+    }).join('')}</div>
+    <div style="font-size:11px;color:var(--text2);margin-top:4px">Last 7 homework submissions</div>
+  `;
+
+  // Chart
+  renderOverviewChart(child, col);
+}
+
+function renderOverviewChart(child, col) {
+  const ctx = document.getElementById('overviewChart');
+  if (!ctx) return;
+  if (charts.overview) charts.overview.destroy();
+
+  const months = ['Jun','Jul','Aug','Sep','Oct','Nov'];
+  const scores = getChildRecords(child.id)
+    .filter(r => r.type === 'academic' && r.score !== undefined)
+    .sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  // Group by month
+  const monthData = { 'Jun':[], 'Jul':[], 'Aug':[], 'Sep':[], 'Oct':[], 'Nov':[] };
+  scores.forEach(r => {
+    const m = new Date(r.date).toLocaleDateString('en-US',{month:'short'});
+    if (monthData[m]) monthData[m].push((r.score/r.maxScore)*100);
+  });
+  const data = months.map(m => {
+    const arr = monthData[m];
+    return arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  });
+
+  charts.overview = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        data,
+        borderColor: col.main,
+        backgroundColor: col.light + '80',
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: col.main,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.parsed.y}%` } } },
+      scales: {
+        y: { min: 0, max: 100, ticks: { font: { size: 11 } }, grid: { color: '#e8e4de' } },
+        x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ===== ACADEMICS RENDER =====
+function renderAcademics() {
+  const child = getActiveChild();
+  if (!child) return;
+  const col = getChildColor(child);
+  const subjectScores = getSubjectScores(child.id);
+  const avg = getOverallAverage(child.id);
+
+  // Ring
+  const pct = avg;
+  const circ = 2 * Math.PI * 50;
+  const offset = circ - (pct / 100) * circ;
+  const ring = document.getElementById('ringFill');
+  if (ring) {
+    ring.style.stroke = col.main;
+    ring.style.strokeDashoffset = offset;
+  }
+  document.getElementById('ringPct').textContent = pct + '%';
+
+  // Subjects
+  const grid = document.getElementById('subjectGrid');
+  const entries = Object.entries(subjectScores);
+  grid.innerHTML = entries.length ? entries.map(([sub, pct]) => `
+    <div class="subject-card">
+      <div class="subject-icon" style="background:${pct>=85?'var(--accent-light)':pct>=70?'var(--gold-light)':'var(--rose-light)'}">${SUBJECT_ICONS[sub]||'📚'}</div>
+      <div class="subject-info">
+        <div class="subject-name">${sub}</div>
+        <div class="subject-detail">${pct>=85?'Strength':''}${pct<70?'Needs work':''}</div>
+      </div>
+      <div>
+        <div class="subject-score" style="color:${pct>=85?col.main:pct>=70?'#e9a84c':'#c0392b'}">${pct}%</div>
+        <span class="score-chip ${pct>=85?'high':pct>=70?'mid':'low'}">${pct>=85?'A':pct>=70?'B':'C'}</span>
+      </div>
+    </div>
+  `).join('') : `<div class="empty-state"><div class="empty-icon">📚</div><p>No academic records yet.<br>Tap + to add your first score.</p></div>`;
+
+  // Subject chart
+  renderSubjectChart(child, col, subjectScores);
+
+  // Recent assessments
+  const recents = getChildRecords(child.id)
+    .filter(r => r.type === 'academic')
+    .sort((a,b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+  const recEl = document.getElementById('recentAssessments');
+  recEl.innerHTML = recents.length ? recents.map(r => `
+    <div class="card" style="padding:12px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:600">${SUBJECT_ICONS[r.subject]||'📚'} ${r.subject} — ${r.exam||'Test'}</span>
+        <span style="font-size:16px;font-weight:700;color:${r.score/r.maxScore>=0.85?col.main:r.score/r.maxScore>=0.7?'#e9a84c':'#c0392b'}">${r.score}/${r.maxScore}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text2)">${formatDate(r.date)}${r.notes?' · '+r.notes:''}</div>
+    </div>
+  `).join('') : '<div class="empty-state" style="padding:20px"><p>No assessments logged yet</p></div>';
+}
+
+function renderSubjectChart(child, col, subjectScores) {
+  const ctx = document.getElementById('subjectChart');
+  if (!ctx) return;
+  if (charts.subject) charts.subject.destroy();
+  const labels = Object.keys(subjectScores);
+  const data = Object.values(subjectScores);
+  const bgColors = data.map(v => v >= 85 ? col.main + 'cc' : v >= 70 ? '#e9a84ccc' : '#c0392bcc');
+  charts.subject = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: bgColors, borderRadius: 6, borderSkipped: false }] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.parsed.y}%` } } },
+      scales: {
+        y: { min: 0, max: 100, ticks: { font: { size: 11 } }, grid: { color: '#e8e4de' } },
+        x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ===== CO-CURRICULAR RENDER =====
+function renderCoCurricular() {
+  const child = getActiveChild();
+  if (!child) return;
+  const col = getChildColor(child);
+  const activities = getActivities(child.id);
+
+  const grid = document.getElementById('activitiesGrid');
+  const entries = Object.entries(activities);
+  grid.innerHTML = entries.length ? entries.map(([act, data]) => `
+    <div class="activity-card">
+      <div class="activity-icon">${ACTIVITY_ICONS[act]||'🎯'}</div>
+      <div class="activity-name">${act}</div>
+      <div class="activity-freq">${data.count} session${data.count!==1?'s':''}</div>
+      ${data.awards.length ? `<span class="activity-badge" style="background:${col.light};color:${col.main}">🏆 ${data.awards[0]}</span>` : ''}
+    </div>
+  `).join('') : `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎨</div><p>No activities logged yet</p></div>`;
+
+  // Achievements
+  const awards = getChildRecords(child.id).filter(r => r.type === 'competition');
+  const achEl = document.getElementById('achievementsList');
+  achEl.innerHTML = awards.length ? awards.map(r => `
+    <div class="card" style="padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">${r.outcome?.includes('Gold')?'🥇':r.outcome?.includes('Silver')?'🥈':r.outcome?.includes('Bronze')?'🥉':'🏆'}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">${r.activity} — ${r.outcome||'Achievement'}</div>
+        <div style="font-size:11px;color:var(--text2)">${formatDate(r.date)}${r.notes?' · '+r.notes:''}</div>
+      </div>
+    </div>
+  `).join('') : '<div class="empty-state" style="padding:20px"><p>No competitions or awards logged yet</p></div>';
+
+  // Activity chart
+  renderActivityChart(child, col, entries);
+}
+
+function renderActivityChart(child, col, entries) {
+  const ctx = document.getElementById('activityChart');
+  if (!ctx) return;
+  if (charts.activity) charts.activity.destroy();
+  const labels = entries.map(([k]) => k);
+  const data = entries.map(([,v]) => Math.round(v.duration / 60 * 10) / 10 || v.count);
+  charts.activity = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: data.length ? data : [1],
+        backgroundColor: labels.length ? labels.map((_,i) => {
+          const colors = [col.main, '#e9a84c', '#7d3c98', '#2471a3', '#c0392b'];
+          return colors[i % colors.length] + 'cc';
+        }) : ['#e8e4de'],
+        borderWidth: 0,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+    }
+  });
+}
+
+// ===== GOALS RENDER =====
+function renderGoals() {
+  const child = getActiveChild();
+  if (!child) return;
+  const col = getChildColor(child);
+  const childGoals = state.goals.filter(g => g.childId === child.id);
+  const el = document.getElementById('goalsList');
+  el.innerHTML = childGoals.length ? childGoals.map(g => `
+    <div class="goal-card">
+      <div class="goal-header">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.4px">${g.type === 'academic' ? '📚 Academic' : g.type === 'activity' ? '🎨 Activity' : g.type === 'reading' ? '📖 Reading' : '🔄 Habit'}</div>
+          <div class="goal-title">${g.title}</div>
+        </div>
+        <span class="goal-status ${g.progress >= 100 ? 'done' : g.status}">${g.progress >= 100 ? '✓ Done' : g.status === 'on-track' ? 'On Track' : 'At Risk'}</span>
+      </div>
+      <div class="goal-meta">Target: ${g.target} · Due: ${formatDate(g.deadline)}</div>
+      <div class="goal-progress-wrap">
+        <div class="prog-bar-label"><span>${g.notes||''}</span><span style="font-weight:700;color:${col.main}">${g.progress}%</span></div>
+        <div class="prog-bar-track"><div class="prog-bar-fill" style="width:${g.progress}%;--fill-color:${g.progress>=100?'#2471a3':g.status==='on-track'?col.main:'#e9a84c'}"></div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="updateGoalProgress('${g.id}')" style="flex:1;padding:8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer">Update Progress</button>
+        <button onclick="deleteGoal('${g.id}')" style="padding:8px 12px;border-radius:8px;background:var(--rose-light);border:1px solid var(--rose);color:var(--rose);font-size:12px;cursor:pointer">🗑</button>
+      </div>
+    </div>
+  `).join('') : `<div class="empty-state"><div class="empty-icon">🎯</div><p>No goals set yet.<br>Tap + Goal to create one.</p></div>`;
+}
+
+function updateGoalProgress(id) {
+  const goal = state.goals.find(g => g.id === id);
+  if (!goal) return;
+  const val = prompt(`Current progress for "${goal.title}" (0–100):`, goal.progress);
+  if (val === null) return;
+  goal.progress = Math.min(100, Math.max(0, parseInt(val) || 0));
+  goal.status = goal.progress >= 80 ? 'on-track' : 'at-risk';
+  saveState();
+  renderGoals();
+  showToast('Goal updated!');
+}
+
+function deleteGoal(id) {
+  if (!confirm('Delete this goal?')) return;
+  state.goals = state.goals.filter(g => g.id !== id);
+  saveState();
+  renderGoals();
+  showToast('Goal deleted');
+}
+
+// ===== TIMELINE RENDER =====
+let timelineFilter = 'all';
+let timelineSearch = '';
+
+function renderTimeline() {
+  const child = getActiveChild();
+  if (!child) return;
+  const col = getChildColor(child);
+  let records = getChildRecords(child.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  if (timelineFilter !== 'all') records = records.filter(r => r.tags?.includes(timelineFilter));
+  if (timelineSearch) {
+    const q = timelineSearch.toLowerCase();
+    records = records.filter(r =>
+      r.subject?.toLowerCase().includes(q) ||
+      r.activity?.toLowerCase().includes(q) ||
+      r.notes?.toLowerCase().includes(q) ||
+      r.exam?.toLowerCase().includes(q)
+    );
+  }
+
+  const container = document.getElementById('timelineContainer');
+  const tagColors = {
+    exam: {bg:'var(--blue-light)',c:'var(--blue)'},
+    award: {bg:'var(--gold-light)',c:'var(--gold)'},
+    excellent: {bg:'var(--accent-light)',c:'var(--accent)'},
+    'needs-attention': {bg:'var(--rose-light)',c:'var(--rose)'},
+    competition: {bg:'var(--gold-light)',c:'#b7950b'},
+    homework: {bg:'var(--surface2)',c:'var(--text2)'},
+    practice: {bg:'var(--purple-light)',c:'var(--purple)'},
+    reading: {bg:'var(--blue-light)',c:'var(--blue)'},
+    'parent note': {bg:'var(--border)',c:'var(--text2)'},
+  };
+
+  container.innerHTML = records.length ? records.map(r => {
+    const tag = r.tags?.[0] || 'note';
+    const tc = tagColors[tag] || {bg:'var(--accent-light)',c:col.main};
+    const icon = r.type==='academic'?'📝':r.type==='competition'?'🏆':r.type==='activity'?'🎨':r.type==='homework'?'✅':r.type==='reading'?'📖':r.type==='note'?'🗒':'📌';
+    const title = r.type==='academic' ? `${r.subject} — ${r.exam||'Test'}: ${r.score}/${r.maxScore}`
+      : r.type==='competition' ? `${r.activity}: ${r.outcome||'Competed'}`
+      : r.type==='activity' ? `${r.activity} practice${r.duration?' ('+r.duration+' min)':''}`
+      : r.type==='homework' ? `Homework — ${r.subject||''} ${r.completed?'✓':''}`
+      : r.type==='reading' ? `Reading: ${r.book||'Book'} (${r.pages||'?'} pages)`
+      : 'Parent Note';
+    return `
+      <div class="tl-item" data-tags="${(r.tags||[]).join(',')}">
+        <div class="tl-dot" style="background:${col.main}">${icon}</div>
+        <div class="tl-card">
+          <div class="tl-meta">
+            <span>${formatDate(r.date)}</span>
+            <span class="tl-tag" style="--tag-bg:${tc.bg};--tag-color:${tc.c}">${tag}</span>
+          </div>
+          <div class="tl-title">${title}</div>
+          ${r.notes ? `<div class="tl-desc">${r.notes}</div>` : ''}
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button onclick="deleteRecord('${r.id}')" style="font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;padding:0">🗑 Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('') : `<div class="empty-state"><div class="empty-icon">📋</div><p>No records found</p></div>`;
+}
+
+function filterTag(el, tag) {
+  timelineFilter = tag;
+  document.querySelectorAll('#timelineTags .tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTimeline();
+}
+
+function filterTimeline(q) {
+  timelineSearch = q;
+  renderTimeline();
+}
+
+function deleteRecord(id) {
+  if (!confirm('Delete this record?')) return;
+  state.records = state.records.filter(r => r.id !== id);
+  saveState();
+  renderTimeline();
+  showToast('Record deleted');
+}
+
+// ===== REPORT RENDER =====
+function renderReport() {
+  const child = getActiveChild();
+  if (!child) return;
+  const col = getChildColor(child);
+  const subjectScores = getSubjectScores(child.id);
+  const avg = getOverallAverage(child.id);
+  const activities = getActivities(child.id);
+  const awards = getChildRecords(child.id).filter(r => r.type === 'competition' && r.outcome);
+  const goals = state.goals.filter(g => g.childId === child.id);
+
+  document.getElementById('reportChildName').textContent = `${child.name}'s Progress Report`;
+
+  const body = document.getElementById('reportBody');
+  body.innerHTML = `
+    <div style="color:var(--text2);font-size:12px;margin-bottom:16px">Generated: ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} · ${child.class} · ${child.school}</div>
+
+    <div style="font-weight:700;margin-bottom:8px;font-size:14px">📊 Academic Summary</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="font-size:36px;font-weight:700;color:${col.main}">${avg}%</div>
+      <div style="color:var(--text2);font-size:12px">Overall Average<br>${avg>=85?'Excellent':''}${avg>=70&&avg<85?'Good':''}${avg<70?'Needs Improvement':''} performance</div>
+    </div>
+    ${Object.entries(subjectScores).map(([s,p])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <span>${SUBJECT_ICONS[s]||'📚'} ${s}</span>
+        <span style="font-weight:700;color:${p>=85?col.main:p>=70?'#e9a84c':'#c0392b'}">${p}%</span>
+      </div>
+    `).join('')}
+
+    <div style="font-weight:700;margin:16px 0 8px;font-size:14px">🎨 Co-Curricular Participation</div>
+    ${Object.keys(activities).length ? Object.entries(activities).map(([a,d])=>`<div style="font-size:13px;padding:4px 0">• ${ACTIVITY_ICONS[a]||'🎯'} ${a}: ${d.count} session(s)${d.awards.length?' — '+d.awards[0]:''}</div>`).join('') : '<div style="font-size:13px;color:var(--text2)">No activities logged</div>'}
+
+    ${awards.length ? `<div style="font-weight:700;margin:16px 0 8px;font-size:14px">🏆 Achievements & Awards</div>
+    ${awards.map(r=>`<div style="font-size:13px;padding:4px 0">• ${r.activity}: ${r.outcome}${r.notes?' — '+r.notes:''} (${formatDate(r.date)})</div>`).join('')}` : ''}
+
+    ${goals.length ? `<div style="font-weight:700;margin:16px 0 8px;font-size:14px">🎯 Goals</div>
+    ${goals.map(g=>`<div style="font-size:13px;padding:4px 0;display:flex;justify-content:space-between"><span>• ${g.title}</span><span style="color:${g.status==='on-track'?col.main:'#e9a84c'};font-weight:600">${g.progress}%</span></div>`).join('')}` : ''}
+
+    <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text2)">
+      <strong>Key Insights:</strong><br>
+      ${generateInsights(child.id).map(i=>` • ${i.title}: ${i.desc}`).join('<br>')}
+    </div>
+  `;
+}
+
+// ===== SETTINGS =====
+function renderSettings() {
+  const el = document.getElementById('childrenList');
+  el.innerHTML = state.children.map((c, i) => {
+    const col = getChildColor(c);
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:${col.main};color:#fff;display:grid;place-items:center;font-weight:700">${c.name[0]}</div>
+          <div>
+            <div style="font-size:14px;font-weight:600">${c.name}</div>
+            <div style="font-size:11px;color:var(--text2)">${c.class} · ${c.school}</div>
+          </div>
+        </div>
+        <button onclick="deleteChild(${i})" style="color:var(--rose);font-size:14px;background:none;border:none;cursor:pointer">🗑</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function deleteChild(i) {
+  if (!confirm(`Delete ${state.children[i].name}'s profile and all records? This cannot be undone.`)) return;
+  const childId = state.children[i].id;
+  state.children.splice(i, 1);
+  state.records = state.records.filter(r => r.childId !== childId);
+  state.goals = state.goals.filter(g => g.childId !== childId);
+  if (state.activeChild >= state.children.length) state.activeChild = Math.max(0, state.children.length - 1);
+  saveState();
+  renderChildSwitcher();
+  renderSettings();
+  showToast('Profile deleted');
+}
+
+// ===== MODALS =====
+function openAddRecord(type) {
+  const child = getActiveChild();
+  if (!child) { showToast('Add a child first!'); return; }
+  document.getElementById('modalTitle').textContent = 'Add Record for ' + child.name;
+  document.getElementById('modalSub').textContent = 'Track academic or activity data';
+  if (type === 'academic') document.getElementById('recordType').value = 'academic';
+  else if (type === 'cocurricular') document.getElementById('recordType').value = 'activity';
+  document.getElementById('recDate').value = new Date().toISOString().split('T')[0];
+  updateFormFields();
+  openModal('addRecordModal');
+}
+
+function openAddGoal() {
+  const child = getActiveChild();
+  if (!child) { showToast('Add a child first!'); return; }
+  document.getElementById('goalDeadline').value = '';
+  openModal('addGoalModal');
+}
+
+function openAddChildModal() { openModal('addChildModal'); }
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+// ===== DYNAMIC FORM FIELDS =====
+function updateFormFields() {
+  const type = document.getElementById('recordType').value;
+  const container = document.getElementById('dynamicFields');
+
+  const subjects = ['Mathematics','Science','English','Hindi','Social Studies','Computer','Physics','Chemistry','Biology','History','Geography'];
+  const acts = Object.keys(ACTIVITY_ICONS);
+
+  let html = '';
+  if (type === 'academic' || type === 'homework') {
+    html += `<div class="form-group"><label class="form-label">Subject</label>
+      <select class="form-select" id="recSubject">
+        ${subjects.map(s=>`<option>${s}</option>`).join('')}
+        <option value="other">Other…</option>
+      </select></div>`;
+  }
+  if (type === 'academic') {
+    html += `<div class="form-group"><label class="form-label">Exam / Test Name</label><input type="text" class="form-input" id="recExam" placeholder="e.g. Unit Test 3, Mid-term"></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Score</label><input type="number" class="form-input" id="recScore" min="0" placeholder="e.g. 85"></div>
+    <div class="form-group"><label class="form-label">Out of</label><input type="number" class="form-input" id="recMaxScore" value="100" min="1"></div></div>
+    <div class="form-group"><label class="form-label">Class Rank (optional)</label><input type="text" class="form-input" id="recRank" placeholder="e.g. 3rd out of 40"></div>`;
+  }
+  if (type === 'homework') {
+    html += `<div class="form-group"><label class="form-label">Completed?</label>
+      <select class="form-select" id="recCompleted"><option value="true">Yes ✓</option><option value="false">No ✗</option></select></div>`;
+  }
+  if (type === 'activity' || type === 'competition') {
+    html += `<div class="form-group"><label class="form-label">Activity</label>
+      <select class="form-select" id="recActivity">
+        ${acts.map(a=>`<option>${a}</option>`).join('')}
+        <option value="other">Other…</option>
+      </select></div>`;
+  }
+  if (type === 'competition') {
+    html += `<div class="form-group"><label class="form-label">Outcome / Award</label><input type="text" class="form-input" id="recOutcome" placeholder="e.g. Gold Medal, 2nd place, Participated"></div>`;
+  }
+  if (type === 'activity') {
+    html += `<div class="form-row">
+      <div class="form-group"><label class="form-label">Duration (min)</label><input type="number" class="form-input" id="recDuration" placeholder="e.g. 60"></div>
+      <div class="form-group"><label class="form-label">Frequency</label><select class="form-select" id="recFreq"><option>Daily</option><option>Weekly</option><option>Twice weekly</option><option>Monthly</option><option>One-time</option></select></div>
+    </div>`;
+  }
+  if (type === 'reading') {
+    html += `<div class="form-group"><label class="form-label">Book Title</label><input type="text" class="form-input" id="recBook" placeholder="Book name"></div>
+    <div class="form-group"><label class="form-label">Pages Read</label><input type="number" class="form-input" id="recPages" placeholder="Number of pages"></div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ===== SUBMIT HANDLERS =====
+function submitRecord(e) {
+  e.preventDefault();
+  const child = getActiveChild();
+  const type = document.getElementById('recordType').value;
+  const date = document.getElementById('recDate').value || new Date().toISOString().split('T')[0];
+  const notes = document.getElementById('recNotes').value;
+  const tags = document.getElementById('recTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+
+  const record = { id: 'r' + Date.now(), childId: child.id, type, date, notes, tags };
+
+  if (type === 'academic') {
+    record.subject = document.getElementById('recSubject')?.value || '';
+    record.exam = document.getElementById('recExam')?.value || '';
+    record.score = parseFloat(document.getElementById('recScore')?.value) || 0;
+    record.maxScore = parseFloat(document.getElementById('recMaxScore')?.value) || 100;
+    if (!tags.length) record.tags = ['exam'];
+  } else if (type === 'homework') {
+    record.subject = document.getElementById('recSubject')?.value || '';
+    record.completed = document.getElementById('recCompleted')?.value === 'true';
+    if (!tags.length) record.tags = ['homework'];
+  } else if (type === 'activity') {
+    record.activity = document.getElementById('recActivity')?.value || '';
+    record.duration = parseInt(document.getElementById('recDuration')?.value) || 0;
+    record.frequency = document.getElementById('recFreq')?.value || '';
+    if (!tags.length) record.tags = ['practice'];
+  } else if (type === 'competition') {
+    record.activity = document.getElementById('recActivity')?.value || '';
+    record.outcome = document.getElementById('recOutcome')?.value || '';
+    if (!tags.length) record.tags = ['competition'];
+  } else if (type === 'reading') {
+    record.book = document.getElementById('recBook')?.value || '';
+    record.pages = parseInt(document.getElementById('recPages')?.value) || 0;
+    if (!tags.length) record.tags = ['reading'];
+  } else if (type === 'note') {
+    if (!tags.length) record.tags = ['parent note'];
+  }
+
+  state.records.push(record);
+  saveState();
+  closeModal('addRecordModal');
+  showToast('Record saved! 🎉');
+  renderCurrentSection();
+}
+
+function submitGoal(e) {
+  e.preventDefault();
+  const child = getActiveChild();
+  const goal = {
+    id: 'g' + Date.now(),
+    childId: child.id,
+    type: document.getElementById('goalType').value,
+    title: document.getElementById('goalTitle').value,
+    target: document.getElementById('goalTarget').value,
+    deadline: document.getElementById('goalDeadline').value,
+    progress: parseInt(document.getElementById('goalProgress').value) || 0,
+    notes: document.getElementById('goalNotes').value,
+    status: 'on-track'
+  };
+  state.goals.push(goal);
+  saveState();
+  closeModal('addGoalModal');
+  showToast('Goal added! 🎯');
+  renderGoals();
+}
+
+function submitChild(e) {
+  e.preventDefault();
+  const colors = ['green','purple','blue','rose','gold'];
+  const child = {
+    id: 'c' + Date.now(),
+    name: document.getElementById('childName').value,
+    class: document.getElementById('childClass').value || 'Class ?',
+    school: document.getElementById('childSchool').value || '',
+    color: document.getElementById('childColor').value,
+  };
+  state.children.push(child);
+  state.activeChild = state.children.length - 1;
+  saveState();
+  closeModal('addChildModal');
+  renderChildSwitcher();
+  renderOverview();
+  showToast(`${child.name}'s profile created! 🌱`);
+}
+
+// ===== EXPORT / IMPORT =====
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `growwise-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  showToast('JSON exported!');
+}
+
+function exportCSV() {
+  const child = getActiveChild();
+  const records = getChildRecords(child.id);
+  const rows = [['Date','Type','Subject/Activity','Score','Max Score','Notes','Tags']];
+  records.forEach(r => {
+    rows.push([r.date, r.type, r.subject||r.activity||r.book||'', r.score||'', r.maxScore||'', r.notes||'', (r.tags||[]).join(';')]);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${child.name}-records-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('CSV exported!');
+}
+
+function importData() { document.getElementById('importFile').click(); }
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (imported.children && imported.records) {
+        state = imported;
+        saveState();
+        init();
+        showToast('Data imported successfully!');
+      } else { alert('Invalid file format'); }
+    } catch(err) { alert('Could not parse file: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('Delete ALL data permanently? This cannot be undone.')) return;
+  localStorage.removeItem('growwise_v2');
+  initDefaultData();
+  init();
+  showToast('Data cleared');
+}
+
+function printReport() {
+  renderReport();
+  setTimeout(() => window.print(), 300);
+}
+
+// ===== UTILITIES =====
+function formatDate(str) {
+  if (!str) return '';
+  return new Date(str).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function uid() { return Math.random().toString(36).slice(2); }
+
+// ===== INIT =====
+function init() {
+  renderChildSwitcher();
+  showSection('overview', document.querySelector('.tab-btn'), document.querySelector('.bottom-nav-item'));
+}
+
+loadState();
+init();
+</script>
+</body>
+</html>
